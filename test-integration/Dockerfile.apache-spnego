@@ -1,0 +1,38 @@
+# Apache HTTP Server with Kerberos/SPNEGO authentication support
+# Using Debian-based image for easier package management
+FROM debian:bookworm-slim
+
+# Install Apache, Kerberos, and mod_auth_gssapi
+RUN apt-get update && \
+    apt-get install -y \
+        apache2 \
+        libapache2-mod-auth-gssapi \
+        krb5-user \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Kerberos configuration
+COPY krb5-docker.conf /etc/krb5.conf
+
+# Copy keytab for the proxy service
+COPY proxy.keytab /etc/apache2/proxy.keytab
+RUN chmod 640 /etc/apache2/proxy.keytab && \
+    chown www-data:www-data /etc/apache2/proxy.keytab
+
+# Enable required Apache modules
+RUN a2enmod proxy proxy_http proxy_connect auth_gssapi headers ssl rewrite
+
+# Remove default sites
+RUN rm -f /etc/apache2/sites-enabled/*
+
+# Copy Apache configuration
+COPY apache-config/ports.conf /etc/apache2/ports.conf
+COPY apache-config/apache-spnego.conf /etc/apache2/sites-available/proxy.conf
+RUN a2ensite proxy
+
+# Expose port
+EXPOSE 3128
+
+# Run Apache in foreground
+CMD ["apache2ctl", "-D", "FOREGROUND"]
+
+

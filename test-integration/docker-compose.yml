@@ -1,0 +1,47 @@
+services:
+  # MIT Kerberos KDC (Key Distribution Center)
+  kerberos:
+    image: gcavalcante8808/krb5-server:latest
+    hostname: kerberos.test.local
+    container_name: test-kerberos-kdc
+    environment:
+      KRB5_REALM: TEST.LOCAL
+      KRB5_KDC: kerberos.test.local
+      KRB5_ADMIN_PASSWORD: admin_password
+      KRB5_PASS: password
+    ports:
+      - "88:88/tcp"
+      - "88:88/udp"
+      - "464:464/tcp"
+      - "464:464/udp"
+      - "749:749/tcp"
+    networks:
+      test-network:
+        ipv4_address: 172.28.0.10
+    volumes:
+      - ./kerberos-config:/etc/krb5.conf.d
+
+  # Apache proxy with SPNEGO authentication
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.apache-spnego
+    hostname: proxy.test.local
+    container_name: test-apache-proxy
+    depends_on:
+      - kerberos
+    ports:
+      - "3128:3128"
+    networks:
+      test-network:
+        ipv4_address: 172.28.0.11
+    # Note: Removed extra_hosts to allow normal DNS resolution and internet access
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+
