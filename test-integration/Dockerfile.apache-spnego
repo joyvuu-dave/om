@@ -13,9 +13,9 @@ RUN apt-get update && \
 # Copy Kerberos configuration
 COPY krb5-docker.conf /etc/krb5.conf
 
-# Copy keytab for the proxy service
-COPY proxy.keytab /etc/apache2/proxy.keytab
-RUN chmod 640 /etc/apache2/proxy.keytab && \
+# Create placeholder keytab (will be replaced by setup-kerberos-principals.sh)
+RUN touch /etc/apache2/proxy.keytab && \
+    chmod 640 /etc/apache2/proxy.keytab && \
     chown www-data:www-data /etc/apache2/proxy.keytab
 
 # Enable required Apache modules
